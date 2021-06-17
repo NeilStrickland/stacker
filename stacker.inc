@@ -272,32 +272,20 @@ function find_flag($s,$indent) {
 function full_flag($s) {
  if ($s == 'a>' || $s == 'answer>') {
   return 'answer>';
- } else if ($s == 'ap>' || $s == 'prompt>') {
-  return 'prompt>';
  } else if ($s == 'av>' || $s == 'answervariable>') {
   return 'answervariable>';
- } else if ($s == 'c>'  || $s == 'mapletype>') {
-  return 'mapletype>';
- } else if ($s == 'd>'  || $s == 'description>') {
-  return 'description>';
+ } else if ($s == 'c>'  || $s == 'inputtype>') {
+  return 'inputtype>';
  } else if ($s == 'f>'  || $s == 'forbid>') {
   return 'forbid>';
  } else if ($s == 'h>'  || $s == 'hide>') {
   return 'hide>';
  } else if ($s == 'k>'  || $s == 'keywords>') {
   return 'keywords>';
- } else if ($s == 'l>'  || $s == 'local>') {
-  return 'local>';
  } else if ($s == 'n>'  || $s == 'note>') {
   return 'note>';
  } else if ($s == 'o>'  || $s == 'options>') {
   return 'options>';
- } else if ($s == 'p>'  || $s == 'print>') {
-  return 'print>';
- } else if ($s == 'pp>' || $s == 'postprompt>') {
-  return 'postprompt>';
- } else if ($s == 's>'  || $s == 'answertest>') {
-  return 'answertest>';
  } else if ($s == 'sb>' || $s == 'beginsol>') {
   return 'beginsol>';
  } else if ($s == 'se>' || $s == 'endsol>') {
@@ -320,10 +308,6 @@ function full_flag($s) {
   return 'penalty>';
  } else if ($s == 'name>') {
   return 'name>';
- } else if ($s == 'title>') {
-  return 'title>';
- } else if ($s == 'description>') {
-  return 'description>';
  } else if ($s == 'keywords>') {
   return 'keywords>';
  } else if ($s == 'end>') {
@@ -416,7 +400,6 @@ function compile_question($lines,$name = '') {
  $generalfeedback = array();
  $inputs = array();
  $prts = array();
- $description = '';
  $keywords = array();
 
  // options fields
@@ -456,8 +439,6 @@ function compile_question($lines,$name = '') {
   if ($state == "statement") {
    if ($flag == "name>") {
     $name = trim($text);
-   } else if ($flag == "description>") {
-    $description = $text;
    } else if ($flag == "keywords>") {
     $keywords = array_merge($keywords,explode(',',$text));
    } else if ($flag == "value>") {
@@ -474,18 +455,12 @@ function compile_question($lines,$name = '') {
     $questionnote = $text;
    } else if ($flag == "options>") {
     $opts->parse($text);
-   } else if ($flag == "prompt>") {
-     $prompt = $text;
-   } else if ($flag == "postprompt>") {
-     $postprompt = $text;
-   } else if ($flag == "mapletype>") {
+   } else if ($flag == "inputtype>") {
     $typespec = trim($text);
    } else if ($flag == "forbid>") {
     $forbidwords[] = $text;
    } else if ($flag == "hide>") {
     $questionvariables[] = $text;
-   } else if ($flag == "print>") {
-    $questiontext[] = $text;
    } else if ($flag == "type>") {
      $x = parse_inputs($text);
      $inputs = array_merge($inputs,$x->inputs);
@@ -519,8 +494,6 @@ function compile_question($lines,$name = '') {
   } else if ($state == "solution") {
    if ($flag == "hide>") {
     $questionvariables[] = $text;
-   } else if ($flag == "print>") {
-    $generalfeedback[] = $text;
    } else if ($flag == "type>") {
     $generalfeedback[] = $text;
    } else if ($flag == "endsol>") {
@@ -689,7 +662,6 @@ function compile_question($lines,$name = '') {
  $question->inputs = $inputs;
  $question->prts = $prts;
  
- $question->description = $description;
  $question->keywords = $keywords;
  $question->defaultgrade = $defaultgrade;
  $question->penalty = $penalty;
