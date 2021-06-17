@@ -1,7 +1,7 @@
 <?php
 
 $source_dir = '/home/sa_pm1nps/Stack';
-chdir('/var/www/html/moodle/scripts');
+chdir('/var/www/html/moodle/scripts/stacker');
 require_once('cli_tools.inc');
 require_once('stacker.inc');
 
