@@ -43,7 +43,7 @@ class stacker_course {
   $this->quizzes_by_short_name = array();
 
   foreach($quizdatas as $quizdata) {
-   // $quiz is an instance of quiz, defined in moodle/mod/quiz/attemptlib.php
+   // $moodle_quiz is an instance of quiz, defined in moodle/mod/quiz/attemptlib.php
    $moodle_quiz = quiz::create($quizdata->instance);
    $moodle_quiz->preload_questions();
    $moodle_quiz->load_questions();
@@ -67,6 +67,43 @@ class stacker_course {
 }
 
 function remove_questions_from_quiz($quizid) {
+ global $DB;
+ 
+ $quiz = quiz::create($quizid);
+ $quiz->preload_questions();
+ $quiz->load_questions();
+ $quiz->get_structure();
+ 
+ $structure = $quiz->get_structure();
+ $slots = $structure->get_slots();
+
+ while(($slot = $structure->get_last_slot()) !== FALSE) {
+  // cli_writeln("Removing slot: ({$slot->id},{$slot->slot})");
+  $structure->remove_slot($slot->slot);
+  $structure = $quiz->get_structure();
+ }
+
+ $context = $quiz->get_context();
+ 
+ $cat_name = 'Default for ' . $quiz->get_quiz_name();
+
+ $category = get_default_category($quizid);
+
+ if ($category) {
+  $finder = question_finder::get_instance();
+  
+  $question_ids =
+                $finder->get_questions_from_categories(array($category->id),"");
+
+  foreach ($question_ids as $i) {
+   question_delete_question($i);
+  }
+ } else {
+  echo "Category '$cat_name' does not exist" . PHP_EOL;
+ }
+}
+
+function remove_stack_questions_from_quiz($quizid) {
  global $DB;
  
  $quiz = quiz::create($quizid);
@@ -206,7 +243,7 @@ function set_quiz_options($quizid) {
 
  $q = $quiz->get_quiz();
  
- $q->preferredbehaviour = 'interactive';
+ $q->preferredbehaviour = 'adaptive';
  $q->reviewattempt = 0x11110;
  $q->reviewcorrectness = 0x11110;
  $q->reviewmarks = 0x11110;
@@ -214,6 +251,7 @@ function set_quiz_options($quizid) {
  $q->reviewgeneralfeedback = 0x10;
  $q->reviewrightanswer = 0x10;
  $q->reviewoverallfeedback = 0x10;
+ $q->attempts = 1;
  
  return($q);
 }
@@ -283,4 +321,47 @@ function allow_late_access($quizid,$on = 1) {
   $a->addreview = $on ? 1 : 0;
   $DB->insert_record('quizaccess_addreview',$a);
  }
+}
+
+function make_adaptive($quizid) {
+ global $DB;
+ $quiz = quiz::create($quizid); 
+
+ $q = $quiz->get_quiz();
+ 
+ $q->preferredbehaviour = 'adaptive';
+ 
+ $DB->update_record('quiz',$q);
+
+ $sql_a = <<<SQL
+SELECT a.id,a.uniqueid
+FROM mdl_quiz_attempts a
+WHERE a.quiz=:quizid AND a.preview=0
+ORDER BY a.id
+SQL;
+
+ $params = array('quizid' => $quizid);
+ 
+ $aids = $DB->get_records_sql($sql_a,$params);
+
+ $sql_b = <<<SQL
+SELECT b.id,b.behaviour
+FROM mdl_question_attempts b
+WHERE b.questionusageid=:quid
+ORDER BY b.id
+SQL;
+
+ foreach($aids as $a) {
+  $u = new stdClass();
+  $u->id = $a->uniqueid;
+  $u->preferredbehaviour = 'adaptive';
+  $DB->update_record('question_usages',$u);
+  $bb = $DB->get_records_sql($sql_b,['quid' => $a->uniqueid]);
+  foreach($bb as $b) {
+   $b->behaviour = 'adaptivemultipart';
+   $DB->update_record('question_attempts',$b);
+  }
+ }
+ 
+ return($q);
 }
