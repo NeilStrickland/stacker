@@ -26,8 +26,19 @@ function to01($s) {
  
 function parse_inputs($s) {
  $inputs = array();
+ $has_validation = array();
  $setup = array();
  $s0 = $s;
+
+ while (preg_match("/{!([A-Za-z0-9_]+)!}/",$s0,$m)) {
+  $name = $m[1];
+  $ms = "[[validation:" . $name . "]]";
+  $s0 = str_replace($m[0],$ms,$s0);
+  $has_validation[$m[1]] = 1;
+  //  echo "Validation element: $name" . PHP_EOL . PHP_EOL . $s0 . PHP_EOL; exit;
+ }
+
+ // echo "No validation elements" . PHP_EOL; exit;
  
  while (preg_match("/{[?]([^?]*)[?]}/",$s0,$m)) {
   $m0 = $m[0];
@@ -138,7 +149,7 @@ function parse_inputs($s) {
    $ip->tans = $ta;
    $ip->prt_tans = $ta;
   }
-  $ms = "[[input:{$name}]][[validation:{$name}]]";
+  
   for ($i = 1; $i < count($m2); $i++) {
    $e = $m2[$i];
    $key = $e[0];
@@ -153,6 +164,13 @@ function parse_inputs($s) {
     $ip->mustverify = 0;
     $ip->hidevalidation = 1;
     $ip->prt_answertest = 'CasEqual';
+   } else if ($key == 'singlechar'         || $key == '1') { 
+    $ip->type = 'singlechar';
+    $ip->showvalidation = 0;
+    $ip->mustverify = 0;
+    $ip->hidevalidation = 1;
+    $ip->prt_answertest = 'CasEqual';
+    $ip->boxsize = 1;
    } else if ($key == 'boxsize'            || $key == 's') { 
     $ip->boxsize = (int) $val;
    } else if ($key == 'strictsyntax'       || $key == 'x') { 
@@ -190,9 +208,16 @@ function parse_inputs($s) {
    }
   }
 
-  if ($ip->hidevalidation) {
-   $ms = "[[input:{$name}]]" .
-      "<span style=\"display:none\">[[validation:{$name}]]</span>";
+
+  if (isset($has_validation[$name])) {
+   $ms = "[[input:{$name}]]";
+  } else {
+   if ($ip->hidevalidation) {
+    $ms = "[[input:{$name}]]" .
+        "<span style=\"display:none\">[[validation:{$name}]]</span>";
+   } else {
+    $ms = "[[input:{$name}]][[validation:{$name}]]";
+   }
   }
   
   $inputs[] = $ip;
@@ -391,7 +416,7 @@ function split_questions($lines) {
  return $questions;
 }
 
-function compile_question($lines,$name = '') {
+function compile_question($lines,$name = '',$debug = 0) {
  // question fields
  $opts = array();
  $defaultgrade = 1;
@@ -668,11 +693,21 @@ function compile_question($lines,$name = '') {
 
  $question->generalfeedback = implode("\n",$generalfeedback);
  $question->numhints = $numhints;
+
+ if ($debug &&
+     count($prts) == 1 &&
+     preg_match('/m[rc]_feedback\(ans,opts/',$prts[0]->feedbackvariables)) {
+  $question->questiontext .= "\n<br/><hr/>{@show_opts(opts)@}"; 
+ }
+
+ if ($debug && trim($question->generalfeedback)) {
+  $question->questiontext .= "\n<br/><hr/>\n" . $question->generalfeedback; 
+ }
  
  return $question;
 }
 
-function compile_lines($lines) {
+function compile_lines($lines,$debug = 0) {
  $questions0 = split_questions($lines);
  $questions = array();
  $errors = array();
@@ -680,7 +715,7 @@ function compile_lines($lines) {
  $i = 0;
  foreach($questions0 as $x) {
   $i++;
-  $q = compile_question($x);
+  $q = compile_question($x,'',$debug);
   if (isset($q->is_error) && $q->is_error) {
    $errors[] = $q;
   } else {
@@ -696,15 +731,15 @@ function compile_lines($lines) {
  return(array($questions,$errors));
 }
 
-function compile_string($s) {
- return compile_lines(split_lines($s));
+function compile_string($s,$debug = 0) {
+ return compile_lines(split_lines($s),$debug);
 }
 
-function compile_file($f) {
+function compile_file($f,$debug=0) {
  log("Compiling file: $f",1);
  $s = file_get_contents($f);
  // echo $s;
- return compile_string($s);
+ return compile_string($s,$debug);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1100,9 +1135,9 @@ class quiz {
   return $x;
  }
 
- function compile() {
+ function compile($debug = 0) {
   $f = $this->full_stack_file_name;
-  $c = compile_file($f);
+  $c = compile_file($f,$debug);
   $this->questions = $c[0];
   $this->errors = $c[1];
  }
