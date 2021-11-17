@@ -21,27 +21,32 @@ try {
  exit;
 }
 
-if ($argc <= 2) {
+if ($argc < 3) {
  echo "No quiz specified" . PHP_EOL;
  exit;
 }
 
 $quiz_name = $argv[2];
 
+$debug = 0;
+if ($argc >= 4) {
+ $debug = $argv[3] ? 1 : 0;
+}
+
 if ($quiz_name == 'all') {
  foreach($C->quizzes as $quiz) {
   $quiz_name = $quiz->get_quiz_name();
-  compile_one($quiz_name);
+  compile_one($quiz_name,$debug);
  }
 } else {
- compile_one($quiz_name);
+ compile_one($quiz_name,$debug);
 }
 
 exit;
 
 //////////////////////////////////////////////////////////////////////
 
-function compile_one($quiz_name) {
+function compile_one($quiz_name,$debug = 0) {
  global $C,$source_dir;
  
  $moodle_quiz = null;
@@ -63,7 +68,7 @@ function compile_one($quiz_name) {
  if (! file_exists($stacker_quiz->full_stack_file_name)) {
   $stacker_quiz->set_file_name($moodle_quiz->short_name);
   if (! file_exists($stacker_quiz->full_stack_file_name)) {
-   echo "Source file not found for {$stacker_quiz->name}" . PHP_EOL;
+   echo "Source file not found for {$stacker_quiz->name} [{$stacker_quiz->full_stack_file_name}]" . PHP_EOL;
    return false;
   }
  }
@@ -72,7 +77,7 @@ function compile_one($quiz_name) {
 
  $doc = new DOMDocument();
  $doc->formatOutput = true;
- $stacker_quiz->compile();
+ $stacker_quiz->compile($debug);
  $stacker_quiz->save_xml($doc);
 
  $quiz_id = $moodle_quiz->get_quizid();
