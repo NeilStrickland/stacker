@@ -38,7 +38,7 @@ SELECT
  m.title
 FROM tbl_module_occurrences o 
  LEFT JOIN tbl_modules m ON o.module_code=m.code
-WHERE o.session=2020
+WHERE o.session=2021
   AND o.module_code IN ($w)
 ORDER BY o.module_code
 SQL;
@@ -78,7 +78,7 @@ x.module_code AS code,
 m.title AS title
 FROM tbl_module_occurrences x
  LEFT JOIN tbl_modules m ON x.module_code=m.code
-WHERE x.session=2020
+WHERE x.session=2021
  AND m.credit_level <= 2
 SQL;
 
@@ -142,7 +142,7 @@ SELECT
 FROM `tbl_teaching_events` g 
  LEFT JOIN tbl_module_occurrences o ON g.module_occurrence_id=o.id
   LEFT JOIN tbl_modules m ON o.module_code=m.code
-WHERE o.session=2020
+WHERE o.session=2021
 AND m.credit_level <= 2
 AND g.type IN ('tutorial','lab session')
 AND g.room_id=451
@@ -220,7 +220,7 @@ SELECT
 FROM `tbl_teaching_events` g 
  LEFT JOIN tbl_module_occurrences o ON g.module_occurrence_id=o.id
   LEFT JOIN tbl_modules m ON o.module_code=m.code
-WHERE o.session=2020
+WHERE o.session=2021
 AND o.module_code IN ($w)
 AND g.type IN ('tutorial','lab session')
 AND g.room_id=451
