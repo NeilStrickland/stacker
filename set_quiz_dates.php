@@ -1,8 +1,9 @@
 <?php
 
 $source_dir = '/home/sa_pm1nps/Stack';
-chdir('/var/www/html/moodle/scripts');
+chdir('/var/www/html/moodle/scripts/stacker');
 require_once('cli_tools.inc');
+require_once($CFG->dirroot . '/mod/quiz/lib.php');
 
 if ($argc < 2) {
  echo "No course specified" . PHP_EOL;
@@ -97,7 +98,8 @@ while(($x = fgetcsv($fh)) !== false) {
  $quiz1->timeopen  = $open_time->timestamp;
  $quiz1->timeclose = $close_time->timestamp;
  $DB->update_record('quiz',$quiz1);
-
+ quiz_update_events($quiz1);
+ 
  echo "$quiz_name : opens {$open_time->ymdhm}, closes {$close_time->ymdhm}" . PHP_EOL;
  
  $i++;
