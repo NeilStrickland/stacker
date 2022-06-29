@@ -1135,6 +1135,75 @@ class quiz {
   return $x;
  }
 
+ function get_preview() {
+  global $DB;
+  
+  $this->preview = null;
+  $this->preview_time = null;
+
+  if (! $this->moodle_quiz) { return null; }
+  $id = $this->moodle_quiz->get_quizid();
+
+  $pp = $DB->get_records('quiz_attempts',
+                         array('quiz' => $this->moodle_quiz->get_quizid(),
+                               'preview' => 1));
+
+  if ($pp) {
+   $this->preview = reset($pp);
+   $this->preview_time = $this->preview->timestart;
+  }
+
+  return $this->preview;
+ }
+
+ function get_file_time() {
+  $this->file_time = 0;
+  $file = $this->full_stack_file_name;
+  if (! file_exists($file) && $this->moodle_quiz) {
+   $this->set_file_name($this->moodle_quiz->short_name);
+   $file = $this->full_stack_file_name;
+  }
+
+  if (file_exists($file)) {
+   $this->file_time = filemtime($file);
+  }
+
+  return $this->file_time;
+ }
+
+ function get_status() {
+  $this->get_preview();
+  $pt = $this->preview_time;
+  $ft = $this->get_file_time();
+
+  $ct = time();
+  $mt = 0;
+
+  if ($this->moodle_quiz) {
+   foreach($this->moodle_quiz->get_questions() as $q) {
+    $ct = min($ct,$q->timecreated);
+    $mt = max($mt,$q->timemodified);
+   }
+  }
+
+  if ($ft >= $ct) {
+   $status = 'uncompiled';
+  } elseif ($ct < $mt) {
+   if ($mt >= $pt) {
+    $status = 'modified, unchecked';
+   } else {
+    $status = 'modified';
+   }
+  } elseif ($mt >= $pt) {
+   $status = 'unchecked';
+  } else {
+   $status = 'ok';
+  }
+
+  $this->status = $status;
+  return $status;
+ }
+ 
  function compile($debug = 0) {
   $f = $this->full_stack_file_name;
   $c = compile_file($f,$debug);
