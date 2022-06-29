@@ -232,6 +232,7 @@ function use_default_category($quizid,$short_name = '') {
 
   quiz_delete_previews($q);
   quiz_update_sumgrades($q);
+  quiz_repaginate_questions($quizid, 4);
  } else {
   echo "Category '$cat_name' does not exist" . PHP_EOL;
  }
