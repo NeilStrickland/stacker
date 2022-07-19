@@ -125,7 +125,7 @@ $courses = $DB->get_records('course');
 
 foreach ($courses as $course) {
  echo "Saving grades for $course->shortname\n";
- $e = new grade_export_stacker($course,'/var/moodle_archive/results/2021');
+ $e = new grade_export_stacker($course,'/var/moodle_archive/results/2021-22');
  $e->get_export_params();
  $e->print_grades();
 }
