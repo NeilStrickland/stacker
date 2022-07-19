@@ -11,7 +11,11 @@ require_once($CFG->dirroot.'/question/engine/bank.php');
 require_once($CFG->dirroot.'/question/format/xml/format.php');
 require_once($CFG->dirroot.'/lib/questionlib.php');
 
+require_once('parse_time.inc');
+
 cron_setup_user();
+
+$source_dir = '/home/sa_pm1nps/Stack';
 
 //////////////////////////////////////////////////////////////////////
 
@@ -62,6 +66,77 @@ class stacker_course {
    $this->quizzes[] = $moodle_quiz;
    $this->quizzes_by_name[$nm] = $moodle_quiz;
    $this->quizzes_by_short_name[$sn] = $moodle_quiz;
+  }
+ }
+
+ function read_dates_file() {
+  global $source_dir;
+
+  $dates_file = $source_dir . "/dates/" . $this->shortname . "_dates.csv";
+  $dates_file = realpath($dates_file);
+
+  if (! $dates_file) {
+   echo "{$this->shortname}: dates_file = ''\n";
+   return false;
+  }
+
+  if (! file_exists($dates_file)) {
+   echo "{$this->shortname}: dates_file = {$dates_file} does not exist.\n";
+   return false;
+  }
+  
+  $fh = fopen($dates_file,"r");
+  if ($fh === false) {
+   echo "Dates file {$dates_file} not found" . PHP_EOL;
+   return false;
+  }
+
+  $i = 1;
+  while(($x = fgetcsv($fh)) !== false) {
+   if (count($x) == 0) { continue; }
+   if (count($x) != 3) {
+    echo "Bad line (number $i) in dates file" . PHP_EOL;
+    continue;
+   }
+ 
+   $quiz_name = $x[0];
+   $quiz = null;
+   
+   if (isset($this->quizzes_by_short_name[$quiz_name])) {
+    $quiz = $this->quizzes_by_short_name[$quiz_name];
+   } else if (isset($this->quizzes_by_name[$quiz_name])) {
+    $quiz = $this->quizzes_by_name[$quiz_name];
+   }
+
+   if ($quiz) {
+    $quiz->open_spec = $x[1];
+    $quiz->close_spec = $x[2];
+   } else {
+    echo "Quiz $quiz_name not found" . PHP_EOL;
+    continue;
+   }
+  }
+
+  fclose($fh);
+ }
+
+ function set_quiz_dates($weeks) {
+  global $DB;
+  foreach ($this->quizzes as $quiz) {
+   if (isset($quiz->open_spec) && isset($quiz->close_spec)) {
+    $open_time = parse_time($quiz->open_spec,$weeks);
+    $close_time = parse_time($quiz->close_spec,$weeks);
+
+    $id = $quiz->get_quizid();
+    $quiz0 = quiz::create($id); 
+    $quiz1 = $quiz0->get_quiz();
+    $quiz1->timeopen  = $open_time->timestamp;
+    $quiz1->timeclose = $close_time->timestamp;
+    $DB->update_record('quiz',$quiz1);
+    quiz_update_events($quiz1);
+    $quiz_name = $quiz0->get_quiz_name();
+    echo "$quiz_name : opens {$open_time->ymdhm}, closes {$close_time->ymdhm}" . PHP_EOL;
+   }
   }
  }
 }
