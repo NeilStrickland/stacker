@@ -1,5 +1,15 @@
 <?php
 
+/* We like to specify quiz opening and closing dates in terms
+ * of the academic calendar, e.g.  S2W5T for Tuesday of week 5
+ * in Semester 1.  To translate these specifications into 
+ * actual dates we need information about the academic calendar,
+ * which is stored in the file weeks.csv.  This file can be 
+ * generated automatically using information fetched from 
+ * maths.shef.ac.uk (and that information comes from the 
+ * main SoMaS database).
+ */
+
 function read_weeks_file($file = 'weeks.csv') {
  $weeks = array(1 => array(),2 => array());
 
@@ -60,6 +70,22 @@ function weeks_from_date_info($di) {
  }
 
  return $weeks;
+}
+
+function make_weeks_file() {
+ $di = fetch_date_info();
+ $s = "";
+ 
+ for ($i = 1; $i <= 2; $i++) {
+  for ($j = 0; $j <= 12; $j++) {
+   $t = $di->week_start_time[$i][$j];
+   $s .= "$i,$j," . date('Y-m-d',$di->week_start_time[$i][$j]) . PHP_EOL;
+  }
+ }
+
+ file_put_contents("weeks.csv",$s);
+
+ return $s;
 }
 
 function parse_time($s, $weeks) {

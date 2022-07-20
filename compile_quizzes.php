@@ -1,9 +1,31 @@
 <?php
 
-$source_dir = '/home/sa_pm1nps/Stack';
-chdir('/var/www/html/moodle/scripts/stacker');
-require_once('cli_tools.inc');
+/* This script compiles a quiz. 
+ * It can be run from the command line using a command like 
+ * php compile_quizzes.php MAS123 "Quiz 6"
+ *
+ * This will not work if students have already attempted the
+ * quiz; in that case, questions cannot be added, subtracted 
+ * or moved, and any changes need to be done through the web
+ * interface.  
+ *
+ * One can write "all" instead of a quiz name, then all 
+ * quizzes will be compiled.
+ * 
+ * One can add 1 as an extra command line argument, like 
+ * php compile_quizzes.php MAS123 "Quiz 6" 1
+ * The quiz will then be compiled in debugging mode, with the
+ * solution and other information included in the question body.
+ */
+
+
+define('CLI_SCRIPT', true);
+ 
+require(__DIR__.'/../../config.php');
 require_once('stacker.inc');
+cron_setup_user();
+
+$source_dir = '/home/sa_pm1nps/Stack';
 
 if ($argc < 2) {
  echo "No course specified" . PHP_EOL;
@@ -12,7 +34,7 @@ if ($argc < 2) {
 
 $course_name = $argv[1];
 
-$C = new stacker_course();
+$C = new \stacker\course();
 
 try {
  $C->load_by_name($course_name);
@@ -35,63 +57,25 @@ if ($argc >= 4) {
 
 if ($quiz_name == 'all') {
  foreach($C->quizzes as $quiz) {
-  $quiz_name = $quiz->get_quiz_name();
-  compile_one($quiz_name,$debug);
+  echo "Compiling {$quiz->name} " . PHP_EOL;
+  $quiz->compile_and_install();
+  foreach($quiz->errors as $e) {
+   echo $e . PHP_EOL;
+  }
  }
 } else {
- compile_one($quiz_name,$debug);
+ if (isset($C->quizzes_by_name[$quiz_name])) {
+  $quiz = $C->quizzes_by_name[$quiz_name];
+  echo "Compiling {$quiz->name} " . PHP_EOL;
+  $quiz->compile_and_install();
+  foreach($quiz->errors as $e) {
+   echo $e . PHP_EOL;
+  }
+ } else {
+  echo "Quiz {$quiz_name} not found" . PHP_EOL;
+ }
 }
 
 exit;
 
-//////////////////////////////////////////////////////////////////////
-
-function compile_one($quiz_name,$debug = 0) {
- global $C,$source_dir;
- 
- $moodle_quiz = null;
- 
- if (isset($C->quizzes_by_name[$quiz_name])) {
-  $moodle_quiz = $C->quizzes_by_name[$quiz_name];
- } elseif (isset($C->quizzes_by_short_name[$quiz_name])) {
-  $moodle_quiz = $C->quizzes_by_short_name[$quiz_name];
- } else {
-  echo "Quiz not found: $quiz_name" . PHP_EOL;
-  exit;
- }
-
- $stacker_quiz = new stacker\quiz();
- $stacker_quiz->name = $moodle_quiz->get_quiz_name();
- $stacker_quiz->set_dirs($source_dir . '/questions/' . $C->shortname);
- $stacker_quiz->munch_moodle_quiz($moodle_quiz);
- 
- if (! file_exists($stacker_quiz->full_stack_file_name)) {
-  $stacker_quiz->set_file_name($moodle_quiz->short_name);
-  if (! file_exists($stacker_quiz->full_stack_file_name)) {
-   echo "Source file not found for {$stacker_quiz->name} [{$stacker_quiz->full_stack_file_name}]" . PHP_EOL;
-   return false;
-  }
- }
- 
- echo "Compiling {$stacker_quiz->full_stack_file_name}" . PHP_EOL;
-
- $doc = new DOMDocument();
- $doc->formatOutput = true;
- $stacker_quiz->compile($debug);
- $stacker_quiz->save_xml($doc);
-
- $quiz_id = $moodle_quiz->get_quizid();
-
- echo "Updating quiz slots (id = {$quiz_id})" . PHP_EOL;
-
- remove_questions_from_quiz($quiz_id);
- echo "Import : {$stacker_quiz->full_xml_file_name} " . PHP_EOL;
- import_xml($quiz_id,$stacker_quiz->xml_dir,$stacker_quiz->xml_file_name);
- use_default_category($quiz_id);
-
- if ($stacker_quiz->errors) {
-  echo "Question compilation errors:" . PHP_EOL;
-  var_dump($stacker_quiz->errors);
- }
-}
 

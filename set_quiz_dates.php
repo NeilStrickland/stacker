@@ -1,10 +1,22 @@
 <?php
 
-$source_dir = '/home/sa_pm1nps/Stack';
-chdir('/var/www/html/moodle/scripts/stacker');
-require_once('cli_tools.inc');
-require_once('parse_time.inc');
-require_once($CFG->dirroot . '/mod/quiz/lib.php');
+/* This script sets the dates for all quizzes in a specified course.
+ * For MAS123, the dates are expected to be specified in a file 
+ * /home/sa_pm1nps/Stack/dates/MAS123.csv
+ * Each line there should consist of a quiz name, the opening 
+ * time and the closing time, specified in terms of the academic
+ * calendar, with strings like "S2W9M 09:00" for 9AM on the Monday
+ * of week 9 in Semester 2.  Codes for days are 
+ * U = Sun, M = Mon, T = Tue, W = Wed, R = Thu, F = Fri, S = Sat.
+ * These are translated to actual dates using information in the
+ * file weeks.csv.  See parse_time.inc for more information.
+ */
+
+define('CLI_SCRIPT', true);
+ 
+require(__DIR__.'/../../config.php');
+require_once('stacker.inc');
+cron_setup_user();
 
 if ($argc < 2) {
  echo "No course specified" . PHP_EOL;
@@ -13,7 +25,7 @@ if ($argc < 2) {
 
 $course_name = $argv[1];
 
-$C = new stacker_course();
+$C = new \stacker\course();
 
 try {
  $C->load_by_name($course_name);
@@ -23,49 +35,23 @@ try {
 }
 
 $weeks = read_weeks_file();
+$errors = $C->read_dates_file();
 
-// $dates_file = $source_dir . "/questions/" . $course_name . "/dates.csv";
-$dates_file = $source_dir . "/dates/" . $course_name . "_dates.csv";
-$dates_file = realpath($dates_file);
-
-$fh = fopen($dates_file,"r");
-if ($fh === false) {
- echo "Dates file {$dates_file} not found" . PHP_EOL;
- exit;
+if ($errors) {
+ echo "Error(s) reading dates file" . PHP_EOL;
+ foreach($errors as $e) {
+  echo $e . PHP_EOL;
+ }
+ echo PHP_EOL;
 }
 
-$i = 1;
-while(($x = fgetcsv($fh)) !== false) {
- if (count($x) == 0) { continue; }
- if (count($x) != 3) {
-  echo "Bad line (number $i) in dates file" . PHP_EOL;
-  continue;
- }
- 
- $quiz_name = $x[0];
- $open_time = parse_time($x[1],$weeks);
- $close_time = parse_time($x[2],$weeks);
-
- if (isset($C->quizzes_by_short_name[$quiz_name])) {
-  $quiz = $C->quizzes_by_short_name[$quiz_name];
- } else if (isset($C->quizzes_by_name[$quiz_name])) {
-  $quiz = $C->quizzes_by_name[$quiz_name];
+foreach($C->quizzes as $quiz) {
+ $quiz->set_dates($weeks);
+ if (isset($quiz->new_dates_msg)) {
+  echo $quiz->new_dates_msg . PHP_EOL;
  } else {
-  echo "Quiz $quiz_name not found" . PHP_EOL;
-  continue;
+  echo $quiz->name . ": dates not set" . PHP_EOL;
  }
-
- $id = $quiz->get_quizid();
- $quiz0 = quiz::create($id); 
- $quiz1 = $quiz0->get_quiz();
- $quiz1->timeopen  = $open_time->timestamp;
- $quiz1->timeclose = $close_time->timestamp;
- $DB->update_record('quiz',$quiz1);
- quiz_update_events($quiz1);
- 
- echo "$quiz_name : opens {$open_time->ymdhm}, closes {$close_time->ymdhm}" . PHP_EOL;
- 
- $i++;
 }
 
 exit;

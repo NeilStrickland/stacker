@@ -1,5 +1,13 @@
 <?php
 
+/* This script is incomplete and does not do anything in its current state.
+ * It fetches a list of students from the SoMaS database and works out 
+ * which of them need to be added to the Moodle database but does not
+ * actually add them.  We instead use the "Synchronise users task" for
+ * that, which is unsatisfactory because it sets the authentication field
+ * to db instead of ldap.  At the moment we have to fix that manually.
+ */
+
 chdir('/var/www/html/moodle/scripts/stacker');
 require_once('cli_tools.inc');
 require_once('stacker.inc');

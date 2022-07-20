@@ -1,11 +1,15 @@
 <?php
 
-require_once('cli_tools.inc');
-require_once('stacker.inc');
+/* This script sets the standard SoMaS options for all quizzes 
+ * in the specified course.  It can be run from the command line
+ * using a command like "php set_quiz_options.php MAS123".
+ */
 
-$source_dir = '/home/sa_pm1nps/Stack';
-chdir('/var/www/html/moodle/scripts');
-require_once('cli_tools.inc');
+define('CLI_SCRIPT', true);
+ 
+require(__DIR__.'/../../config.php');
+require_once('stacker.inc');
+cron_setup_user();
 
 if ($argc < 2) {
  echo "No course specified" . PHP_EOL;
@@ -14,7 +18,7 @@ if ($argc < 2) {
 
 $course_name = $argv[1];
 
-$C = new stacker_course();
+$C = new \stacker\course();
 
 try {
  $C->load_by_name($course_name);
@@ -24,11 +28,7 @@ try {
 }
 
 foreach($C->quizzes as $quiz) {
- $id = $quiz->get_quizid();
- $q = set_quiz_options($id);
- echo "Setting options for {$quiz->get_quiz_name()}" . PHP_EOL;
- $DB->update_record('quiz',$q);
+ echo "Setting options for {$quiz->name}" . PHP_EOL;
+ $quiz->set_options();
 }
-
-
 

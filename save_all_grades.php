@@ -1,12 +1,44 @@
 <?php
 
-define('CLI_SCRIPT', true);
+/* This script is intended to be run in the summer before resetting Moodle
+ * for the next academic year.  It creates CSV files in
+ * /var/moodle_archive/results which record marks attained by all students
+ * on all courses. 
+ */
 
+define('CLI_SCRIPT', true);
+ 
 require(__DIR__.'/../../config.php');
+require_once('stacker.inc');
+cron_setup_user();
+
 require_once($CFG->dirroot.'/grade/export/lib.php');
 require_once($CFG->libdir . '/csvlib.class.php');
 
-cron_setup_user();
+$year = (int) date('Y');
+$month = (int) date('m');
+
+if (! (7 <= $month && $month <= 9)) {
+ echo <<<TEXT
+  This script is intended to be run in the summer before resetting Moodle.
+  
+TEXT
+  ;
+ exit;
+}
+
+$session_string = sprintf("%d-%02d",$Y-1,$Y-2000);
+
+$courses = $DB->get_records('course');
+
+foreach ($courses as $course) {
+ echo "Saving grades for $course->shortname\n";
+ $e = new \grade_export_stacker($course,'/var/moodle_archive/results/' . $session_string);
+ $e->get_export_params();
+ $e->print_grades();
+}
+
+echo "Done\n";
 
 
 // This is a copy of code from grade/export/txt/grade_export_txt.php
@@ -26,7 +58,7 @@ class grade_export_stacker extends grade_export {
      */
     public function __construct($course, $dir) {
         $groupid = 0;
-        $formdata = new stdClass();
+        $formdata = new \stdClass();
         $formdata->separator = "comma";
         parent::__construct($course, $groupid, $formdata);
         $this->dir = $dir;
@@ -52,7 +84,7 @@ class grade_export_stacker extends grade_export {
 
         $shortname = format_string($this->course->shortname, true, array('context' => context_course::instance($this->course->id)));
         $downloadfilename = clean_filename("$shortname $strgrades");
-        $csvexport = new csv_export_writer($this->separator);
+        $csvexport = new \csv_export_writer($this->separator);
         $csvexport->set_filename($downloadfilename);
 
         // Print names of all the fields
@@ -79,8 +111,8 @@ class grade_export_stacker extends grade_export {
         $csvexport->add_data($exporttitle);
 
         // Print all the lines of data.
-        $geub = new grade_export_update_buffer();
-        $gui = new graded_users_iterator($this->course, $this->columns, $this->groupid);
+        $geub = new \grade_export_update_buffer();
+        $gui = new \graded_users_iterator($this->course, $this->columns, $this->groupid);
         $gui->require_active_enrolment($this->onlyactive);
         $gui->allow_user_custom_fields($this->usercustomfields);
         $gui->init();
@@ -121,14 +153,4 @@ class grade_export_stacker extends grade_export {
     }
 }
 
-$courses = $DB->get_records('course');
-
-foreach ($courses as $course) {
- echo "Saving grades for $course->shortname\n";
- $e = new grade_export_stacker($course,'/var/moodle_archive/results/2021-22');
- $e->get_export_params();
- $e->print_grades();
-}
-
-echo "Done\n";
 

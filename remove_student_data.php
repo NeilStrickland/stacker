@@ -1,7 +1,14 @@
 <?php
 
-$source_dir = '/home/sa_pm1nps/Stack';
-require_once('cli_tools.inc');
+/* This file removes all student data from all courses.  It should
+ * be run in July or maybe September to reset the system for the 
+ * next academic year.  It is very slow.  If you start it running 
+ * in the evening it should finish by the next morning.
+ */
+
+define('CLI_SCRIPT', true);
+require(__DIR__.'/../../config.php');
+cron_setup_user();
 
 require_once($CFG->dirroot.'/lib/moodlelib.php');
 require_once($CFG->dirroot.'/course/lib.php');

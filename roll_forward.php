@@ -1,7 +1,17 @@
 <?php
 
-$source_dir = '/home/sa_pm1nps/Stack';
-require_once('cli_tools.inc');
+/* This script is intended to be run in the summer.  It sets the 
+ * start and end dates for every course that ran in the previous
+ * academic year, so that it now runs in the following academic
+ * year.  It also sets starting and ending dates for all of the
+ * quizzes.
+ */
+
+define('CLI_SCRIPT', true);
+ 
+require(__DIR__.'/../../config.php');
+require_once('stacker.inc');
+cron_setup_user();
 
 require_once($CFG->dirroot.'/lib/moodlelib.php');
 
@@ -27,11 +37,11 @@ $new_end_string = array(
 $courses = $DB->get_records('course');
 
 foreach ($courses as $c) {
- $c->start_datetime = new DateTime();
+ $c->start_datetime = new \DateTime();
  $c->start_datetime->setTimestamp($c->startdate);
  $c->start_string = $c->start_datetime->format('Y-m-d');
 
- $c->end_datetime = new DateTime();
+ $c->end_datetime = new \DateTime();
  $c->end_datetime->setTimestamp($c->enddate);
  $c->end_string = $c->end_datetime->format('Y-m-d');
 
@@ -73,8 +83,8 @@ foreach ($courses as $c) {
  $c->startdate = $c->new_start_date;
  $c->enddate = $c->new_end_date;
  $DB->update_record('course',$c);
- $sc = new stacker_course();
- $sc->fill($c);
+ $sc = new \stacker\course();
+ $sc->raw_fill($c);
  $sc->read_dates_file();
  echo "Setting quiz dates for {$c->shortname}\n";
  $sc->set_quiz_dates($weeks);
