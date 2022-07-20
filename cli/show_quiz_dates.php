@@ -2,7 +2,7 @@
 
 define('CLI_SCRIPT', true);
  
-require(__DIR__.'/../../config.php');
+require(__DIR__.'/../../../config.php');
 require_once('stacker.inc');
 cron_setup_user();
 

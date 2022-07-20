@@ -9,7 +9,7 @@
  */
 
 require_once('cli_tools.inc');
-require_once('stacker.inc');
+require_once('../stacker.inc');
 
 if ($argc < 2) {
  echo "No course specified" . PHP_EOL;

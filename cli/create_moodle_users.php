@@ -8,9 +8,8 @@
  * to db instead of ldap.  At the moment we have to fix that manually.
  */
 
-chdir('/var/www/html/moodle/scripts/stacker');
 require_once('cli_tools.inc');
-require_once('stacker.inc');
+require_once('../stacker.inc');
 
 $moodle_students = $DB->get_records('user');
 $moodle_students_by_username = array();

@@ -12,14 +12,14 @@ require_once($CFG->dirroot.'/lib/questionlib.php');
 
 require_once('parse_time.inc');
 
-$source_dir = '/home/sa_pm1nps/Stack';
+$source_dir = '/var/moodledata/stacker';
 
 /* This class is just a container for methods related to compilation 
  * of stacker markup files.
  */
 
 class compiler {
- public $log_level = 1;
+ public $log_level = 0;
 
  function log($s,$n=1) {
   if ($this->log_level >= $n) {
@@ -1640,7 +1640,10 @@ SQL;
   $mt = 0;
 
   if ($this->moodle_quiz) {
+   $this->moodle_quiz->preload_questions();
+   $this->moodle_quiz->load_questions();
    foreach($this->moodle_quiz->get_questions() as $q) {
+    if ($q->qtype !== 'stack') { continue; }
     $ct = min($ct,$q->timecreated);
     $mt = max($mt,$q->timemodified);
    }
@@ -1798,12 +1801,16 @@ SQL;
 
  function compile_and_install($debug = 0) {
   $this->compile($debug);
-  $doc = new \DOMDocument();
-  $doc->formatOutput = true;
-  $this->save_xml($doc);
-  $this->remove_questions();
-  $this->import_xml();
-  $this->use_default_category();
+  if (! $this->errors) {
+   $doc = new \DOMDocument();
+   $doc->formatOutput = true;
+   $this->save_xml($doc);
+   $this->remove_questions();
+   $this->import_xml();
+   $this->use_default_category();
+  }
+
+  return $this->errors;
  }
 }
  

@@ -14,8 +14,8 @@
 
 define('CLI_SCRIPT', true);
  
-require(__DIR__.'/../../config.php');
-require_once('stacker.inc');
+require(__DIR__.'/../../../config.php');
+require_once('../stacker.inc');
 cron_setup_user();
 
 if ($argc < 2) {

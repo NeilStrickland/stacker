@@ -21,11 +21,11 @@
 
 define('CLI_SCRIPT', true);
  
-require(__DIR__.'/../../config.php');
-require_once('stacker.inc');
+require(__DIR__.'/../../../config.php');
+require_once('../stacker.inc');
 cron_setup_user();
 
-$source_dir = '/home/sa_pm1nps/Stack';
+$source_dir = '/var/moodledata/stacker';
 
 if ($argc < 2) {
  echo "No course specified" . PHP_EOL;

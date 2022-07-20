@@ -7,7 +7,7 @@
  */
 
 define('CLI_SCRIPT', true);
-require(__DIR__.'/../../config.php');
+require(__DIR__.'/../../../config.php');
 cron_setup_user();
 
 require_once($CFG->dirroot.'/lib/moodlelib.php');
