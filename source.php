@@ -83,12 +83,22 @@ echo $OUTPUT->header();
 echo $OUTPUT->heading('Stacker source ' . $t);
 
 if ($compile) {
+ if ($debug) {
+  $msg = <<<HTML
+The file compiled (in debug mode) without errors and the quiz has been updated.
+<br/>
+
+HTML
+      ;
+ } else {
   $msg = <<<HTML
 The file compiled without errors and the quiz has been updated.
 <br/>
 
 HTML
       ;
+ }
+ 
  echo $msg;
  echo $OUTPUT->single_button($source_url,'Source','get');
  
