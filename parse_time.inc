@@ -10,17 +10,29 @@
  * main SoMaS database).
  */
 
-function read_weeks_file($file = 'weeks.csv') {
+$source_dir = '/var/moodledata/stacker';
+$default_weeks_file = $source_dir . '/weeks.csv';
+
+function read_weeks_file($file = '') {
+ global $default_weeks_file;
+ 
+ if (! $file) { $file = $default_weeks_file; }
+ 
  $weeks = array(1 => array(),2 => array());
 
- if (! file_exists("weeks.csv")) {
-  echo "Weeks file not found in " . getcwd() . PHP_EOL;
+ if (! file_exists($file)) {
+  echo "Attempting to create weeks file ($file)" . PHP_EOL;
+  make_weeks_file($file);
+ }
+
+ if (! file_exists($file)) {
+  echo "Weeks file ($file) not found" . PHP_EOL;
   exit; 
  }
 
- $fh = fopen("weeks.csv","r");
+ $fh = fopen($file,"r");
  if ($fh === false) {
-  echo "Weeks file not opened" . PHP_EOL;
+  echo "Weeks file ($file) not opened" . PHP_EOL;
   exit;
  }
 
@@ -72,7 +84,11 @@ function weeks_from_date_info($di) {
  return $weeks;
 }
 
-function make_weeks_file() {
+function make_weeks_file($file = '') {
+ global $default_weeks_file;
+ 
+ if (! $file) { $file = $default_weeks_file; }
+ 
  $di = fetch_date_info();
  $s = "";
  
@@ -83,7 +99,7 @@ function make_weeks_file() {
   }
  }
 
- file_put_contents("weeks.csv",$s);
+ file_put_contents($file,$s);
 
  return $s;
 }
