@@ -1,35 +1,31 @@
 <?php
 
-/* This script is incomplete and does not do anything in its current state.
- * It fetches a list of students from the SoMaS database and works out 
- * which of them need to be added to the Moodle database but does not
- * actually add them.  We instead use the "Synchronise users task" for
- * that, which is unsatisfactory because it sets the authentication field
- * to db instead of ldap.  At the moment we have to fix that manually.
- */
-
 require_once('cli_tools.inc');
 require_once('../stacker.inc');
 
-$moodle_students = $DB->get_records('user');
-$moodle_students_by_username = array();
+require_once($CFG->dirroot.'/user/lib.php');
 
-foreach($moodle_students as $s) {
+// echo "mnet_localhost_id = " . $CFG->mnet_localhost_id . PHP_EOL;
+
+$moodle_users = $DB->get_records('user');
+$moodle_users_by_username = array();
+
+foreach($moodle_users as $s) {
  if (! $s->username) {
-  echo "Error : students {$s->id} has no username." . PHP_EOL;
+  echo "Error : users {$s->id} has no username." . PHP_EOL;
   continue;
  }
 
- if (array_key_exists($s->username,$moodle_students_by_username)) {
+ if (array_key_exists($s->username,$moodle_users_by_username)) {
   echo "Error : multiple records for username {$s->username}." . PHP_EOL;
   continue;
  }
 
- $moodle_students_by_username[$s->username] = $s;
+ $moodle_users_by_username[$s->username] = $s;
 }
 
-$n = count($moodle_students);
-echo "Moodle database: $n students." . PHP_EOL;
+$n = count($moodle_users);
+echo "Moodle database: $n users." . PHP_EOL;
 
 $somas_db_pass = trim(file_get_contents('/var/sangaku/somas_cred.txt'));
 
@@ -44,10 +40,10 @@ if (! $somas_db) {
  exit;
 }
 
-$students = array();
+$users = array();
 
 $q = <<<SQL
-SELECT username,firstname,lastname,email FROM view_moodle_students
+SELECT username,firstname,lastname,email FROM view_moodle_teachers
 SQL;
 
 $result = $somas_db->query($q);
@@ -60,24 +56,34 @@ if ($result === false) {
  exit;
 }
 
-while($student = mysqli_fetch_object($result)) {
- $students[] = $student;
+while($user = mysqli_fetch_object($result)) {
+ $user->username = strtolower(trim($user->username));
+ $users[] = $user;
 }
 
-$n = count($students);
+$n = count($users);
 
-echo "SoMaS database : $n students." . PHP_EOL . PHP_EOL;
+echo "SoMaS database : $n users." . PHP_EOL . PHP_EOL;
 
-foreach($students as $student) {
- if (! $student->username) { continue; }
+foreach($users as $user) {
+ if (! $user->username) { continue; }
  
- if (array_key_exists($student->username,$moodle_students_by_username)) {
-  $x = $moodle_students_by_username[$student->username];
-  echo "Student {$student->username} has Moodle ID {$x->id}." . PHP_EOL;
+ if (array_key_exists($user->username,$moodle_users_by_username)) {
+  $x = $moodle_users_by_username[$user->username];
+  echo "User {$user->username} has Moodle ID {$x->id}." . PHP_EOL;
  } else {
-  echo "To add: " . PHP_EOL;
-  var_dump($student);
-  exit;
+  $user->auth = 'ldap';
+  $user->confirmed = 1;
+  $user->mnethostid = $CFG->mnet_localhost_id;
+  try {
+   $id = user_create_user($user, false, false); 
+   echo "Added {$user->username} ({$user->firstname} {$user->lastname}) with ID {$id}" .
+     PHP_EOL;
+  } catch(moodle_exception $e) {
+   echo "Failed to add {$user->username} ({$user->firstname} {$user->lastname})" .
+    PHP_EOL . "<br/>" . PHP_EOL . $e->getMessage();
+   exit;
+  }
  }
 }
 
