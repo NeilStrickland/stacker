@@ -2,7 +2,7 @@
 
 namespace stacker;
 
-require_once('../../config.php');
+require_once(__DIR__.'/../../config.php');
 
 require_once($CFG->dirroot.'/mod/quiz/attemptlib.php');
 require_once($CFG->dirroot.'/mod/quiz/accessmanager.php');
@@ -1788,6 +1788,9 @@ SQL;
 
   $s = $this->to_xml_string($doc);
   $f = $this->full_xml_file_name;
+  if ($this->xml_dir && ! is_dir($this->xml_dir)) {
+   mkdir($this->xml_dir,0775,true);
+  }
   file_put_contents($f,$s);
  }
 
