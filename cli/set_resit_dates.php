@@ -49,10 +49,9 @@ try {
 }
 
 foreach($C->quizzes as $quiz) {
- $id = $quiz->get_quizid();
- echo "Setting dates for {$quiz->get_quiz_name()}" . PHP_EOL;
- $id = $quiz->get_quizid();
- $quiz0 = quiz::create($id); 
+ $id = $quiz->id;
+ echo "Setting dates for {$quiz->name}" . PHP_EOL;
+ $quiz0 = $quiz->moodle_quiz; 
  $quiz1 = $quiz0->get_quiz();
  $quiz1->timeopen  = $opening_time;
  $quiz1->timeclose = $closing_time;
