@@ -24,7 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2022071902;
+$plugin->version   = 2023012000;
 $plugin->requires  = 2022041900;
 $plugin->cron      = 0;
 $plugin->component = 'local_stacker';
