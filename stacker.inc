@@ -1261,7 +1261,7 @@ class quiz {
 
   $this->short_name = $sn;
    
-  $this->set_file_name($this->name);
+  $this->set_file_name($this->short_name);
  }
 
  function set_dirs($source_dir) {
