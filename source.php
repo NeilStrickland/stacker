@@ -48,6 +48,11 @@ $debug_url = new moodle_url('/local/stacker/source.php',
                             ));
 
 $f = $quiz->full_stack_file_name;
+if (! file_exists($f)) {
+ $quiz->set_file_name($quiz->short_name);
+ $f = $quiz->full_stack_file_name; 
+}
+
 $errors = array();
 
 if (file_exists($f)) {
